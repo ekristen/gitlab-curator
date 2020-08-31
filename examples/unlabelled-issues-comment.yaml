@@ -1,0 +1,19 @@
+resource_rules:
+  issues:
+    rules:
+      - name: Ask author to add appropriate labels
+        conditions:
+          state: opened
+          author:
+            can_label: true
+          labels:
+            - none
+        actions:
+          labels:
+            - automation/updated
+          comment: |
+            Hi @{{ .Issue.Author.Username }},
+
+            Please be sure to add the appropriate kind and area labels to your issue. If unsure, please engage product team.
+
+            Thanks!

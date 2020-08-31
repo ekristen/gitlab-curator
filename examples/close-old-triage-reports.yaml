@@ -1,0 +1,15 @@
+resource_rules:
+  issues:
+    rules:
+      - name: Close the triage report
+        conditions:
+          state: opened
+          labels:
+            - kind/triage
+          date:
+            condition: created_before
+            duration: 336h
+        actions:
+          state: close
+          labels:
+            - automation/closed

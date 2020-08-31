@@ -1,0 +1,33 @@
+resource_rules:
+  issues:
+    rules:
+      - name: Collate latest unlabelled issues
+        conditions:
+          state: opened
+          labels:
+            - requires/qa
+          forbidden_labels:
+            - verified/qa
+            - kind/triage
+        limits:
+          most_recent: 50
+        actions:
+          summarize:
+            destination: ekristen/triage
+            title: |
+              {{ now | date "2006-01-02" }} QA Sprint Daily Report - Total for Review {{ .Issues | length }}
+            summary: |
+              Hi @qa,
+
+              Here are the issues that are closed that require QA and that are NOT yet verified.
+
+              For the issues listed please review and verify, then check off each issue and add `verified/qa` to each issue once verified.
+
+              **Important:** If there is a problem with one of the close issues, **OPEN** a new issue on the same project, then use the `/copy_metadata #OLD_ISSUE_NUMBER` to copy milestones, labels over to the new issue. Also reference the old issue and relate it.
+
+              {{ range .Issues }}
+              - [ ] {{ .References.Full }} {{ .Title }} - {{ range .Labels }}~"{{.}}" {{ end }}
+              {{- end }}
+
+              /assign @hi
+              /label ~"kind/triage"

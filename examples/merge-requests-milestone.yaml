@@ -1,0 +1,19 @@
+resource_rules:
+  merge_requests:
+    rules:
+      - name: Add sprint milestone to open merge requests
+        conditions:
+          state: opened
+          milestone: none
+          forbidden_labels:
+            - kind/renovate
+            - automation/updated
+        actions:
+          labels:
+            - automation/updated
+          comment: |
+            Hi @{{ .MergeRequest.Author.Username }},
+
+            Please make sure you assign your merge request to the appropriate sprint milestone.
+
+            Thanks!

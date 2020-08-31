@@ -1,0 +1,36 @@
+resource_rules:
+  issues:
+    rules:
+      - name: Ask for updates on old issues
+        conditions:
+          date:
+            condition: created_before
+            duration: 8760h
+          state: opened
+          forbidden_labels:
+            - automation/close
+        actions:
+          comment: |
+            Hi @{{ .Issue.Author.Username }},
+
+            Please could you provide an update for this issue. It was created
+            over a year ago and we would like to understand whether it is still
+            valid.
+
+            To prevent the bot automatically closing this issue, please either:
+             - remove the ~"automation/close" label
+             - add the ~"automation/prevent-close" label
+          labels:
+            - automation/close
+      - name: Close issues marked for closure with 2 weeks of inactivity
+        conditions:
+          state: opened
+          date:
+            condition: created_before
+            duration: 336h
+          labels:
+            - automation/close
+          forbidden_labels:
+            - automation/prevent-close
+        actions:
+          state: closed

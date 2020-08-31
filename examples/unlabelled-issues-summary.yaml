@@ -1,0 +1,32 @@
+resource_rules:
+  issues:
+    rules:
+      - name: Collate latest unlabelled issues
+        conditions:
+          state: opened
+          labels:
+            - none
+        limits:
+          most_recent: 50
+        actions:
+          summarize:
+            destination: ekristen/triage
+            title: |
+              {{ now | date "2006-01-02" }} Newly created unlabelled issues requiring initial triage
+            summary: |
+              Hi Triage Team,
+
+              Here is a list of the latest issues without labels in the project.
+
+              {{ range .Issues }}
+              - [ ] {{ .References.Full }} {{ .Title }}
+              {{- end }}
+
+              For the issues triaged please check off the box in front of the given issue.
+
+              Once you've triaged all the issues assigned to you, you can unassign yourself with the `/unassign me` quick action.
+
+              **When all the checkboxes are done, close the issue, and celebrate!** :tada:
+
+              /assign @hi
+              /label ~"kind/triage"

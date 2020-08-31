@@ -1,0 +1,13 @@
+resource_rules:
+  issues:
+    rules:
+      - name: testing
+        conditions:
+          state: opened
+          labels:
+            - none
+        limits:
+          most_recent: 50
+        actions:
+          labels:
+            - testing

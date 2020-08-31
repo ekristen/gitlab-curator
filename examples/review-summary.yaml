@@ -1,0 +1,25 @@
+resource_rules:
+  issues:
+    rules:
+      - name: Review Request Refinement
+        conditions:
+          labels:
+            - status/review
+          state: open
+        limits:
+          most_recent: 20
+        actions:
+          summarize:
+            title: |
+              {{ now | date "2006-01-02" }} - Review Request Processing
+            summary: |
+              The following reviews have been requested. Please check that these reviews are active,
+              start the conversation, or find a team member who has capacity to start these reviews.
+
+              {{ range .Issues }}
+              - [ ] {{ .References.Full }} {{ .Title }}
+              {{- end }}
+
+              /assign @#{TRIAGE_OWNER}
+              /due {{ now | date "2006-01-02" }}
+              /label ~"kind/triage-review"
