@@ -173,8 +173,10 @@ func (rule *Rule) GenerateListGroupMilestonesOptions() *gitlab.ListGroupMileston
 		ListOptions: rule.GenerateLimits(),
 	}
 
-	if rule.Conditions != nil && rule.Conditions.State != "" {
-		options.State = rule.Conditions.State
+	if rule.Conditions != nil {
+		if rule.Conditions.State != "" {
+			options.State = rule.Conditions.State
+		}
 	}
 
 	return options

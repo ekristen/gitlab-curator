@@ -19,4 +19,4 @@ require (
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 )
 
-replace github.com/xanzy/go-gitlab => github.com/ekristen/go-gitlab v0.36.1-0.20200901232751-7c18231ba23c
+replace github.com/xanzy/go-gitlab => github.com/ekristen/go-gitlab v0.36.1-0.20200902004707-2edc9371c745

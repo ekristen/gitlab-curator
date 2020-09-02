@@ -12,6 +12,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/ekristen/go-gitlab v0.36.1-0.20200901232751-7c18231ba23c h1:RIRJg9ER0tD6NaGLfSWfbrN4VY9TlgX6DCsh5J+Hg0k=
 github.com/ekristen/go-gitlab v0.36.1-0.20200901232751-7c18231ba23c/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=
+github.com/ekristen/go-gitlab v0.36.1-0.20200902004707-2edc9371c745 h1:3aiwHX7zQ7ixp3SohftLpJq/aH7FGokaf6ZGMklh9Z8=
+github.com/ekristen/go-gitlab v0.36.1-0.20200902004707-2edc9371c745/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM=

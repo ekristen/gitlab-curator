@@ -27,6 +27,7 @@ type RuleConditions struct {
 	Date            *RuleConditionDate `json:"date,omitempty" yaml:"date,omitempty"`
 	Weight          string             `json:"weight,omitempty" yaml:"weight,omitempty"`
 	Milestone       string             `json:"milestone,omitempty" yaml:"milestone,omitempty"`
+	Expired         bool               `json:"expired,omitempty" yaml:"expired,omitempty" comment:"Only valid for filters for milestones"`
 }
 
 // RuleConditionDate --
@@ -69,10 +70,4 @@ type AuthorMember struct {
 type Author struct {
 	CanLabel bool   `json:"can_label" yaml:"can_label"`
 	MemberOf string `json:"member_of,omitempty" yaml:"member_of,omitempty"`
-}
-
-// Filter --
-type Filter struct {
-	Relation   string          `json:"relation" yaml:"relation"`
-	Conditions *RuleConditions `json:"conditions" yaml:"conditions"`
 }

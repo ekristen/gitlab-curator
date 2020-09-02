@@ -163,7 +163,9 @@ Conditions are native options that the GitLab API supports.
 
 #### Filters
 
-Filters allow you to filter out (or **omit**) results from the original result set. This is useful when GitLab's Native API does not allow for the filtering natively.
+Filters allow you to **include** or **exclude** results from the original result set. This is useful when GitLab's Native API does not allow for the filtering natively.
+
+**Note:** all filters are treated with an AND operator
 
 For example if we want to close all milestones that are expired (past due) and have no more open issues then we use filters to omit any that still have open issues.
 
@@ -174,16 +176,27 @@ resource_rules:
       - name: Close expired and completed milestones
         conditions:
           state: active
-          expired: true
         limits:
           per_page: 99
         filters:
+          - relation: self
+            conditions:
+              expired: true
           - relation: assigned_issues
             conditions:
               state: opened
         actions:
           state: closed
 ```
+
+##### Filter Conditions
+
+These can apply to the main resource itself (like milestones or issues) or if can apply to any resource that's assigned to it.
+
+- [x] self
+- [x] assigned_issues
+- [ ] assigned_merge_requests
+- [ ] assigned_epics
 
 #### Actions
 

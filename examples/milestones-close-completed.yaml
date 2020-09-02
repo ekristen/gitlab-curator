@@ -4,12 +4,17 @@ resource_rules:
       - name: Close expired and completed milestones
         conditions:
           state: active
-          expired: true
         limits:
           per_page: 99
         filters:
-          - relation: assigned_issues
+          - name: "keep expired milestones"
+            conditions:
+              expired: true
+            action: include
+          - name: "omit if has opened issues"
+            relation: assigned_issues
             conditions:
               state: opened
+            action: exclude
         actions:
           state: closed

@@ -117,38 +117,13 @@ func (r *Rule) FilterGroupMilestones(opts *Options, milestones []*gitlab.GroupMi
 
 	log.Info("filtering milestones")
 
-	var filteredMilestones []*gitlab.GroupMilestone
+	var err error
+	var filteredMilestones = milestones
 
-	for _, milestone := range milestones {
-		omit := false
-		log = log.WithField("milestone", milestone.Title)
-
-		for _, filter := range r.Filters {
-			log = log.WithField("filter", filter.Relation)
-
-			if filter.Relation == "assigned_issues" {
-				issues, _, err := opts.client.GroupMilestones.GetGroupMilestoneIssues(milestone.GroupID, milestone.ID, &gitlab.GetGroupMilestoneIssuesOptions{})
-				if err != nil {
-					return milestones, err
-				}
-
-				for _, i := range issues {
-					if filter.Conditions != nil && filter.Conditions.State == i.State {
-						log.Debug("omit milestone by filter")
-
-						omit = true
-						break
-					}
-				}
-
-				if omit {
-					continue
-				}
-			}
-		}
-
-		if !omit {
-			filteredMilestones = append(filteredMilestones, milestone)
+	for _, filter := range r.Filters {
+		filteredMilestones, err = filter.GroupMilestones(opts, filteredMilestones, log)
+		if err != nil {
+			return nil, err
 		}
 	}
 
