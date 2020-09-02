@@ -66,3 +66,91 @@ func (r *Rule) ProcessMergeRequests(opts *Options) error {
 
 	return nil
 }
+
+// ProcessMilestones --
+func (r *Rule) ProcessMilestones(opts *Options) error {
+	log := logrus.WithField("component", "process-milestones").WithField("source-type", opts.sourceType)
+
+	if opts.sourceType == "group" {
+		options := r.GenerateListGroupMilestonesOptions()
+		milestones, _, err := opts.client.GroupMilestones.ListGroupMilestones(opts.sourceID, options)
+		if err != nil {
+			return err
+		}
+
+		log.WithField("count", len(milestones)).Info("found milestones")
+
+		milestones, err = r.FilterGroupMilestones(opts, milestones, log)
+		if err != nil {
+			return err
+		}
+
+		log.WithField("count", len(milestones)).Info("milestones after filtering")
+
+		for _, milestone := range milestones {
+			if err := r.State(opts, milestone); err != nil {
+				return err
+			}
+		}
+	} else if opts.sourceType == "project" {
+		options := &gitlab.ListMilestonesOptions{}
+		milestones, _, err := opts.client.Milestones.ListMilestones(opts.sourceID, options)
+		if err != nil {
+			return err
+		}
+
+		for _, milestone := range milestones {
+			if err := r.State(opts, milestone); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// FilterGroupMilestones --
+func (r *Rule) FilterGroupMilestones(opts *Options, milestones []*gitlab.GroupMilestone, log *logrus.Entry) ([]*gitlab.GroupMilestone, error) {
+	if r.Filters == nil {
+		return milestones, nil
+	}
+
+	log.Info("filtering milestones")
+
+	var filteredMilestones []*gitlab.GroupMilestone
+
+	for _, milestone := range milestones {
+		omit := false
+		log = log.WithField("milestone", milestone.Title)
+
+		for _, filter := range r.Filters {
+			log = log.WithField("filter", filter.Relation)
+
+			if filter.Relation == "assigned_issues" {
+				issues, _, err := opts.client.GroupMilestones.GetGroupMilestoneIssues(milestone.GroupID, milestone.ID, &gitlab.GetGroupMilestoneIssuesOptions{})
+				if err != nil {
+					return milestones, err
+				}
+
+				for _, i := range issues {
+					if filter.Conditions != nil && filter.Conditions.State == i.State {
+						log.Debug("omit milestone by filter")
+
+						omit = true
+						break
+					}
+				}
+
+				if omit {
+					continue
+				}
+			}
+		}
+
+		if !omit {
+			filteredMilestones = append(filteredMilestones, milestone)
+		}
+	}
+
+	return filteredMilestones, nil
+}

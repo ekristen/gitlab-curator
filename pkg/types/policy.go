@@ -14,12 +14,35 @@ type ResourcePolicy struct {
 
 // ResourceRules --
 type ResourceRules struct {
+	Epics         *ResourcePolicy `json:"epics,omitempty" yaml:"epics,omitempty"`
 	Issues        *ResourcePolicy `json:"issues,omitempty" yaml:"issues,omitempty"`
 	MergeRequests *ResourcePolicy `json:"merge_requests,omitempty" yaml:"merge_requests,omitempty"`
+	Milestones    *ResourcePolicy `json:"milestones,omitempty" yaml:"milestones,omitempty"`
 }
 
 // Process --
 func (r *ResourceRules) Process(opts *Options) error {
+	if r.Milestones != nil {
+		logrus.WithField("rule_count", len(r.Milestones.Rules)).Info("executing milestones based policy rules")
+		for _, mr := range r.Milestones.Rules {
+			logrus.WithField("name", mr.Name).WithField("type", opts.sourceType).Info("executing rule")
+
+			if mr.Issues != nil {
+				if r.Issues == nil {
+					r.Issues = &ResourcePolicy{
+						Rules: []Rule{},
+					}
+				}
+
+				r.Issues.Rules = append(r.Issues.Rules, mr.Issues.Rules...)
+			}
+
+			if err := mr.ProcessMilestones(opts); err != nil {
+				return err
+			}
+		}
+	}
+
 	if r.Issues != nil {
 		logrus.WithField("rule_count", len(r.Issues.Rules)).Info("executing issues based policy rules")
 
@@ -40,36 +63,6 @@ func (r *ResourceRules) Process(opts *Options) error {
 			if err := r.ProcessMergeRequests(opts); err != nil {
 				return err
 			}
-
-			/*
-				if sourceType == "group" {
-					options := r.GenerateGroupMergeRequestsOptions()
-
-					mergeRequests, _, err := git.MergeRequests.ListGroupMergeRequests(sourceID, options)
-					if err != nil {
-						return err
-					}
-
-					logrus.WithField("count", len(mergeRequests)).Info("found merge requests")
-
-					//fmt.Println(mergeRequests)
-				} else if sourceType == "project" {
-					options := r.GenerateProjectMergeRequestsOptions()
-
-					mergeRequests, _, err := git.MergeRequests.ListProjectMergeRequests(sourceID, options)
-					if err != nil {
-						return err
-					}
-
-					for _, mr := range mergeRequests {
-						c, _ := r.CommentMR(mr)
-						c, _ = c.CreateComment(git, dryrun)
-
-					}
-
-					logrus.WithField("count", len(mergeRequests)).Info("found merge requests")
-				}
-			*/
 		}
 	}
 

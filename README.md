@@ -132,26 +132,79 @@ This tool makes use of golang's templating system. This allows for easy interpol
 
 Templates are passed a structure of data, but it varies depending on the target. For the summary action, the data passed is `Issues` so it will be available with `{{ .Issues }}` when building the template. For all other actions they are acted upon a single issue or single merge request, so their data is `Issue` or `MergeRequest` and available via `{{ .Issue }}` or `{{ .MergeRequest }}`.
 
-## Actions
+## Supported Resources
+
+- [x] Issues
+- [x] Merge Requests
+- [x] Milestones
+- [ ] Epics
+
+### Milestones
+
+**Limitations:** Only the `state` action can be used with milestones, but milestones have special filters.
+
+Milestones can be filtered by 
+
+## Policies
+
+### Rules
+
+#### Conditions
+
+Conditions are native options that the GitLab API supports. 
+
+* State - any valid state for issue, merge request, or milestone
+* Labels (list) - `any`, `none`, or specific label
+* ForbiddenLabels (list) - `any`, `none`, or specific label
+* Date
+  * Condition: created_before, created_after, updated_before, updated_after
+  * Duration: Expressed in hours, minutes, seconds (12h30m) (this is subtracted from the current time)
+* Milestone (string) - Specific milestone, `any` or `none`
+
+#### Filters
+
+Filters allow you to filter out (or **omit**) results from the original result set. This is useful when GitLab's Native API does not allow for the filtering natively.
+
+For example if we want to close all milestones that are expired (past due) and have no more open issues then we use filters to omit any that still have open issues.
+
+```yaml
+resource_rules:
+  milestones:
+    rules:
+      - name: Close expired and completed milestones
+        conditions:
+          state: active
+          expired: true
+        limits:
+          per_page: 99
+        filters:
+          - relation: assigned_issues
+            conditions:
+              state: opened
+        actions:
+          state: closed
+```
+
+#### Actions
 
 - Label (issues or merge requests)
 - Comment (issues or merge requests)
 - Summarize (issues)
-- State (issues)
+- State (issues, milestones)
 
-### Label
+##### Label
 
 This action is pretty straight forward, this will add labels to whatever issues or merge requests meet the search criteria.
 
-### Comment
+##### Comment
 
 This action will leave a comment on the issue or merge request that meet the search criteria.
 
-### Summarize
+##### Summarize
 
 This action will take a search of issues or merge requests and create a summary issue that can be assigned to someone else.
 
-#### State
+##### State
 
 This action will either open or close issues that meet the search criteria
 

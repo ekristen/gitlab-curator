@@ -82,6 +82,10 @@ func (rule *Rule) GenerateGroupIssueOptions() *gitlab.ListGroupIssuesOptions {
 func (rule *Rule) GenerateLimits() gitlab.ListOptions {
 	listOptions := gitlab.ListOptions{}
 	if rule.Limits != nil {
+		if rule.Limits.PerPage != nil {
+			listOptions.PerPage = *rule.Limits.PerPage
+		}
+
 		if rule.Limits.MostRecent != nil {
 			listOptions.PerPage = *rule.Limits.MostRecent
 		}
@@ -158,6 +162,19 @@ func (rule *Rule) GenerateProjectMergeRequestsOptions() *gitlab.ListProjectMerge
 	if rule.Limits != nil && rule.Limits.MostRecent != nil {
 		options.OrderBy = gitlab.String("created_at")
 		options.Sort = gitlab.String("desc")
+	}
+
+	return options
+}
+
+// GenerateListGroupMilestonesOptions --
+func (rule *Rule) GenerateListGroupMilestonesOptions() *gitlab.ListGroupMilestonesOptions {
+	options := &gitlab.ListGroupMilestonesOptions{
+		ListOptions: rule.GenerateLimits(),
+	}
+
+	if rule.Conditions != nil && rule.Conditions.State != "" {
+		options.State = rule.Conditions.State
 	}
 
 	return options

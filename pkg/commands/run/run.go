@@ -1,7 +1,9 @@
 package run
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,10 @@ func (s *command) Execute(c *cli.Context) error {
 	sourceID := c.String("source-id")
 	file := c.String("file")
 	dryrun := c.Bool("dry-run")
+
+	if !fileExists(file) {
+		return fmt.Errorf("%s not found or not readable", file)
+	}
 
 	logrus.WithFields(logrus.Fields{
 		"token":      token,
@@ -100,4 +106,12 @@ func init() {
 	}
 
 	common.RegisterCommand(cliCmd)
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }

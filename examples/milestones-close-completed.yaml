@@ -1,0 +1,15 @@
+resource_rules:
+  milestones:
+    rules:
+      - name: Close expired and completed milestones
+        conditions:
+          state: active
+          expired: true
+        limits:
+          per_page: 99
+        filters:
+          - relation: assigned_issues
+            conditions:
+              state: opened
+        actions:
+          state: closed

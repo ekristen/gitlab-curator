@@ -1,0 +1,25 @@
+resource_rules:
+  milestones:
+    rules:
+      - name: Find all expired milestones that are open but take no action
+        conditions:
+          state: opened
+          expired: true
+        issues:
+          rules:
+            - name: Ask author to close or update issue associated to expired milestone
+              conditions:
+                state: opened
+              actions:
+                labels:
+                  - automation/updated
+                comment: |
+                  {{- if .Issue.Assignee }}
+                  Hi @{{ .Issue.Assignee.Username }},
+                  {{- else }}
+                  Hi @{{ .Issue.Author.Username }},
+                  {{- end }}
+
+                  This issue is attached to an expired milestone and it is still open, can you please update accordingly.
+
+                  Thanks!

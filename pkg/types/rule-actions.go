@@ -174,7 +174,7 @@ func (rule *Rule) Comment(opts *Options, entity interface{}) error {
 
 func (rule *Rule) checkMemberPermissions(opts *Options, projectID, memberID int) (bool, error) {
 	if rule.Conditions.Author != nil && rule.Conditions.Author.CanLabel {
-		member, _, err := opts.client.ProjectMembers.GetAllProjectMember(projectID, memberID)
+		member, _, err := opts.client.ProjectMembers.GetInheritedProjectMember(projectID, memberID)
 		if err != nil {
 			return false, err
 		}
@@ -242,6 +242,7 @@ func (rule *Rule) commentIssue(opts *Options, issue *gitlab.Issue, log *logrus.E
 	}
 
 	if opts.dryRun == true {
+		log.Debug(buf.String())
 		log.Warn("WOULD have created note on issue")
 		return nil
 	}
@@ -264,12 +265,44 @@ func (rule *Rule) commentMergeRequest(opts *Options, issue *gitlab.MergeRequest,
 	return nil
 }
 
-// State will change the state of an issue
-func (rule *Rule) State(opts *Options, issue *gitlab.Issue) error {
-	log := logrus.
+// State changes state of a Gitlab entity
+func (rule *Rule) State(opts *Options, entity interface{}) error {
+	if rule.Actions == nil || rule.Actions.State == nil {
+		logrus.Debug("no state action defined")
+		return nil
+	}
+
+	switch reflect.TypeOf(entity).String() {
+	case "*gitlab.Milestone":
+		milestone := entity.(*gitlab.Milestone)
+
+		log := logrus.
+			WithField("title", milestone.Title).
+			WithField("created", milestone.CreatedAt)
+
+		log.Debug("starting state action")
+
+		return rule.stateProjectMilestone(opts, milestone, log)
+	case "*gitlab.GroupMilestone":
+		milestone := entity.(*gitlab.GroupMilestone)
+
+		log := logrus.
+			WithField("title", milestone.Title).
+			WithField("created", milestone.CreatedAt)
+
+		log.Debug("starting state action")
+
+		return rule.stateGroupMilestone(opts, milestone, log)
+	}
+
+	return nil
+}
+
+func (rule *Rule) stateProjectMilestone(opts *Options, milestone *gitlab.Milestone, log *logrus.Entry) error {
+	log = logrus.
 		WithField("component", "state").
-		WithField("issue", issue.ID).
-		WithField("project", issue.ProjectID)
+		WithField("milestone", milestone.ID).
+		WithField("project", milestone.ProjectID)
 
 	if rule.Actions.State == nil {
 		log.WithField("skipped", true).Debug("skipped, no state action defined")
@@ -288,16 +321,58 @@ func (rule *Rule) State(opts *Options, issue *gitlab.Issue) error {
 
 	if *rule.Actions.State != compareState {
 		if opts.dryRun == true {
-			log.WithField("old", issue.State).WithField("new", newState).Warn("WOULD have updated issue state")
+			log.WithField("old", milestone.State).WithField("new", newState).Warn("WOULD have updated issue state")
 			return nil
 		}
 
-		_, _, err := opts.client.Issues.UpdateIssue(issue.ProjectID, issue.ID, &gitlab.UpdateIssueOptions{
+		_, _, err := opts.client.Milestones.UpdateMilestone(milestone.ProjectID, milestone.ID, &gitlab.UpdateMilestoneOptions{
 			StateEvent: gitlab.String(newState),
 		})
 		if err != nil {
+			return err
+		}
+	} else {
+		log.Debug("state was in expected state, nothing to do")
+	}
+
+	return nil
+}
+
+func (rule *Rule) stateGroupMilestone(opts *Options, milestone *gitlab.GroupMilestone, log *logrus.Entry) error {
+	log = logrus.
+		WithField("component", "state").
+		WithField("milestone", milestone.Title).
+		WithField("group", milestone.GroupID)
+
+	if rule.Actions.State == nil {
+		log.WithField("skipped", true).Debug("skipped, no state action defined")
+		return nil
+	}
+
+	newState := "unknown"
+	if milestone.State == "active" {
+		newState = "close"
+	} else {
+		newState = "activate"
+	}
+
+	if *rule.Actions.State != milestone.State {
+		log = log.WithField("old", milestone.State).WithField("new", newState)
+		if opts.dryRun == true {
+			log.Warn("WOULD have updated milestone state")
 			return nil
 		}
+
+		_, _, err := opts.client.GroupMilestones.UpdateGroupMilestone(milestone.GroupID, milestone.ID, &gitlab.UpdateGroupMilestoneOptions{
+			StateEvent: gitlab.String(newState),
+		})
+		if err != nil {
+			return err
+		}
+
+		log.Info("updated milestone successfully")
+	} else {
+		log.Debug("state was in expected state, nothing to do")
 	}
 
 	return nil

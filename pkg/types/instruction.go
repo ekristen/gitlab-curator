@@ -6,6 +6,13 @@ type Rule struct {
 	Conditions *RuleConditions `json:"conditions" yaml:"conditions"`
 	Actions    *RuleActions    `json:"actions" yaml:"actions"`
 	Limits     *RuleLimits     `json:"limits,omitempty" yaml:"limits,omitempty"`
+
+	// Allow for embedding additional rules, only applies for epics, milestone
+	Epics         *ResourcePolicy `json:"epics,omitempty" yaml:"epics,omitempty"`
+	Issues        *ResourcePolicy `json:"issues,omitempty" yaml:"issues,omitempty"`
+	MergeRequests *ResourcePolicy `json:"merge_requests,omitempty" yaml:"merge_requests,omitempty"`
+
+	Filters []*Filter `json:"filters,omit_empty" yaml:"filters,omit_empty"`
 }
 
 // RuleConditions --
@@ -40,6 +47,7 @@ type RuleActions struct {
 // RuleLimits --
 type RuleLimits struct {
 	MostRecent *int `json:"most_recent,omitempty" yaml:"most_recent,omitempty"`
+	PerPage    *int `json:"per_page,omitempty" yaml:"per_page,omitempty"`
 }
 
 // RuleActionSummarize --
@@ -61,4 +69,10 @@ type AuthorMember struct {
 type Author struct {
 	CanLabel bool   `json:"can_label" yaml:"can_label"`
 	MemberOf string `json:"member_of,omitempty" yaml:"member_of,omitempty"`
+}
+
+// Filter --
+type Filter struct {
+	Relation   string          `json:"relation" yaml:"relation"`
+	Conditions *RuleConditions `json:"conditions" yaml:"conditions"`
 }
