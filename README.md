@@ -28,8 +28,30 @@ unlabelled-issues:
     - gitlab-curator --token $TRIAGE_GITLAB_TOKEN --source-type group --source-id 1234567890 --file unlabelled-issues-summary.yaml
   rules:
     - if: '$UNLABELLED_ISSUES == "true"'
-
 ```
+
+## Development
+
+This tool is written in golang and go modules, you will need to ensure that GOPATH is not set and `GO111MODULES=on` is.
+
+```bash
+go run main.go
+```
+
+### Building
+
+```bash
+go build -o gitlab-curator main.go 
+```
+
+#### Cross Compiling
+
+This can be done using `gox` or GOOS env var. For a one time simple cross compile ...
+
+```bash
+GOOS=linux go build -o gitlab-curator-linux-amd64 main.go 
+```
+
 
 ### Help
 
