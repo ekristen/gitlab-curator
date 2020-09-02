@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/mitchellh/copystructure"
 	"github.com/sirupsen/logrus"
 	"github.com/xanzy/go-gitlab"
 )
@@ -68,45 +69,59 @@ func (r *Rule) ProcessMergeRequests(opts *Options) error {
 }
 
 // ProcessMilestones --
-func (r *Rule) ProcessMilestones(opts *Options) error {
+func (r *Rule) ProcessMilestones(opts *Options) ([]Rule, error) {
 	log := logrus.WithField("component", "process-milestones").WithField("source-type", opts.sourceType)
+
+	generatedIssueRules := []Rule{}
 
 	if opts.sourceType == "group" {
 		options := r.GenerateListGroupMilestonesOptions()
 		milestones, _, err := opts.client.GroupMilestones.ListGroupMilestones(opts.sourceID, options)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		log.WithField("count", len(milestones)).Info("found milestones")
 
 		milestones, err = r.FilterGroupMilestones(opts, milestones, log)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		log.WithField("count", len(milestones)).Info("milestones after filtering")
 
 		for _, milestone := range milestones {
+			if r.Issues != nil {
+				for _, mrr := range r.Issues.Rules {
+					new, err := copystructure.Copy(mrr)
+					if err != nil {
+						return nil, err
+					}
+
+					new.(Rule).Conditions.Milestone = milestone.Title
+					generatedIssueRules = append(generatedIssueRules, new.(Rule))
+				}
+			}
+
 			if err := r.State(opts, milestone); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	} else if opts.sourceType == "project" {
 		options := &gitlab.ListMilestonesOptions{}
 		milestones, _, err := opts.client.Milestones.ListMilestones(opts.sourceID, options)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		for _, milestone := range milestones {
 			if err := r.State(opts, milestone); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
 
-	return nil
+	return generatedIssueRules, nil
 }
 
 // FilterGroupMilestones --

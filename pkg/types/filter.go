@@ -37,6 +37,7 @@ func (f *Filter) GroupMilestones(opts *Options, milestones []*gitlab.GroupMilest
 		log = log.WithField("milestone", milestone.Title)
 
 		if f.Relation == "self" {
+			log.Debug("relation: self - called")
 			if f.Conditions != nil && f.Conditions.Expired == milestone.Expired {
 				log.Debug("expired matched")
 				matched = true

@@ -108,6 +108,10 @@ func (rule *Rule) Label(opts *Options, entity interface{}) error {
 			WithField("project", issue.ProjectID).
 			WithField("created", issue.CreatedAt)
 
+		if issue.Milestone != nil {
+			log = log.WithField("milestone", issue.Milestone.Title)
+		}
+
 		rule.labelIssue(opts, issue, log)
 		break
 	case "*gitlab.MergeRequest":
@@ -119,6 +123,10 @@ func (rule *Rule) Label(opts *Options, entity interface{}) error {
 			WithField("title", mergeRequest.Title).
 			WithField("project", mergeRequest.ProjectID).
 			WithField("created", mergeRequest.CreatedAt)
+
+		if mergeRequest.Milestone != nil {
+			log = log.WithField("milestone", mergeRequest.Milestone.Title)
+		}
 
 		rule.labelMergeRequest(opts, mergeRequest, log)
 		break
@@ -142,6 +150,10 @@ func (rule *Rule) Comment(opts *Options, entity interface{}) error {
 			WithField("author", issue.Author.Username).
 			WithField("title", issue.Title).
 			WithField("created", issue.CreatedAt)
+
+		if issue.Milestone != nil {
+			log = log.WithField("milestone", issue.Milestone.Title)
+		}
 
 		ok, err := rule.checkMemberPermissions(opts, issue.ProjectID, issue.Author.ID)
 		if err != nil {
@@ -267,11 +279,6 @@ func (rule *Rule) commentMergeRequest(opts *Options, issue *gitlab.MergeRequest,
 
 // State changes state of a Gitlab entity
 func (rule *Rule) State(opts *Options, entity interface{}) error {
-	if rule.Actions == nil || rule.Actions.State == nil {
-		logrus.Debug("no state action defined")
-		return nil
-	}
-
 	switch reflect.TypeOf(entity).String() {
 	case "*gitlab.Milestone":
 		milestone := entity.(*gitlab.Milestone)
@@ -279,6 +286,11 @@ func (rule *Rule) State(opts *Options, entity interface{}) error {
 		log := logrus.
 			WithField("title", milestone.Title).
 			WithField("created", milestone.CreatedAt)
+
+		if rule.Actions == nil || rule.Actions.State == nil {
+			log.Debug("no state action defined")
+			return nil
+		}
 
 		log.Debug("starting state action")
 
@@ -289,6 +301,11 @@ func (rule *Rule) State(opts *Options, entity interface{}) error {
 		log := logrus.
 			WithField("title", milestone.Title).
 			WithField("created", milestone.CreatedAt)
+
+		if rule.Actions == nil || rule.Actions.State == nil {
+			log.Debug("no state action defined")
+			return nil
+		}
 
 		log.Debug("starting state action")
 

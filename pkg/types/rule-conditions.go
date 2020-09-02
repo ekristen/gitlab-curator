@@ -54,6 +54,10 @@ func (rule *Rule) GenerateGroupIssueOptions() *gitlab.ListGroupIssuesOptions {
 		options.NotLabels = append(options.NotLabels, rule.Conditions.MissingLabels...)
 	}
 
+	if rule.Conditions.Milestone != "" {
+		options.Milestone = &rule.Conditions.Milestone
+	}
+
 	if rule.Conditions.Date != nil {
 		dur := -rule.Conditions.Date.Duration.Duration
 		now := time.Now().UTC()

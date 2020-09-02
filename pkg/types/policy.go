@@ -1,6 +1,9 @@
 package types
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v1"
+)
 
 // Policy --
 type Policy struct {
@@ -27,18 +30,23 @@ func (r *ResourceRules) Process(opts *Options) error {
 		for _, mr := range r.Milestones.Rules {
 			logrus.WithField("name", mr.Name).WithField("type", opts.sourceType).Info("executing rule")
 
-			if mr.Issues != nil {
+			generatedIssuesRules, err := mr.ProcessMilestones(opts)
+			if err != nil {
+				return err
+			}
+
+			b, _ := yaml.Marshal(generatedIssuesRules)
+			logrus.Debug(string(b))
+
+			if generatedIssuesRules != nil {
+				logrus.Debug("found generated issue rules, appending ...")
+
 				if r.Issues == nil {
 					r.Issues = &ResourcePolicy{
 						Rules: []Rule{},
 					}
 				}
-
-				r.Issues.Rules = append(r.Issues.Rules, mr.Issues.Rules...)
-			}
-
-			if err := mr.ProcessMilestones(opts); err != nil {
-				return err
+				r.Issues.Rules = append(r.Issues.Rules, generatedIssuesRules...)
 			}
 		}
 	}

@@ -12,7 +12,7 @@ type Rule struct {
 	Issues        *ResourcePolicy `json:"issues,omitempty" yaml:"issues,omitempty"`
 	MergeRequests *ResourcePolicy `json:"merge_requests,omitempty" yaml:"merge_requests,omitempty"`
 
-	Filters []*Filter `json:"filters,omit_empty" yaml:"filters,omit_empty"`
+	Filters []*Filter `json:"filters,omitempty" yaml:"filters,omitempty"`
 }
 
 // RuleConditions --

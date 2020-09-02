@@ -1,18 +1,26 @@
 resource_rules:
   milestones:
     rules:
-      - name: Find all expired milestones that are open but take no action
+      - name: Find all expired milestones and comment on issue
         conditions:
-          state: opened
-          expired: true
+          state: active
+        filters:
+          - conditions:
+              expired: true
+        limits:
+          per_page: 50
         issues:
           rules:
             - name: Ask author to close or update issue associated to expired milestone
               conditions:
                 state: opened
+                forbidden_labels:
+                  - automation/expired-milestone
+              limits:
+                per_page: 1
               actions:
                 labels:
-                  - automation/updated
+                  - automation/expired-milestone
                 comment: |
                   {{- if .Issue.Assignee }}
                   Hi @{{ .Issue.Assignee.Username }},
@@ -21,5 +29,10 @@ resource_rules:
                   {{- end }}
 
                   This issue is attached to an expired milestone and it is still open, can you please update accordingly.
+
+                  If complete, please comment as such and close the issue. 
+
+                  If incomplete, please comment as to why it is not complete and either close if it is not going to be finished
+                  or move to the appropriate milestone for completion.
 
                   Thanks!
