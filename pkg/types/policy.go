@@ -25,6 +25,34 @@ type ResourceRules struct {
 
 // Process --
 func (r *ResourceRules) Process(opts *Options) error {
+	if r.Epics != nil {
+		logrus.WithField("rule_count", len(r.Epics.Rules)).Info("executing epics based policy rules")
+		for _, e := range r.Epics.Rules {
+			logrus.WithField("name", e.Name).WithField("type", opts.sourceType).Info("executing rule")
+
+			err := e.ProcessEpics(opts)
+			if err != nil {
+				return err
+			}
+
+			/*
+				b, _ := yaml.Marshal(generatedIssuesRules)
+				logrus.Debug(string(b))
+
+				if generatedIssuesRules != nil {
+					logrus.Debug("found generated issue rules, appending ...")
+
+					if r.Issues == nil {
+						r.Issues = &ResourcePolicy{
+							Rules: []Rule{},
+						}
+					}
+					r.Issues.Rules = append(r.Issues.Rules, generatedIssuesRules...)
+				}
+			*/
+		}
+	}
+
 	if r.Milestones != nil {
 		logrus.WithField("rule_count", len(r.Milestones.Rules)).Info("executing milestones based policy rules")
 		for _, mr := range r.Milestones.Rules {

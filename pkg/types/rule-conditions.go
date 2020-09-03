@@ -185,3 +185,18 @@ func (rule *Rule) GenerateListGroupMilestonesOptions() *gitlab.ListGroupMileston
 
 	return options
 }
+
+// GenerateListGroupEpicsOptions --
+func (rule *Rule) GenerateListGroupEpicsOptions() *gitlab.ListGroupEpicsOptions {
+	options := &gitlab.ListGroupEpicsOptions{
+		ListOptions:             rule.GenerateLimits(),
+		IncludeDescendantGroups: gitlab.Bool(true),
+	}
+
+	labels := gitlab.Labels(rule.Conditions.Labels)
+
+	options.State = &rule.Conditions.State
+	options.Labels = labels
+
+	return options
+}

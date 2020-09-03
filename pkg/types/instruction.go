@@ -28,6 +28,9 @@ type RuleConditions struct {
 	Weight          string             `json:"weight,omitempty" yaml:"weight,omitempty"`
 	Milestone       string             `json:"milestone,omitempty" yaml:"milestone,omitempty"`
 	Expired         bool               `json:"expired,omitempty" yaml:"expired,omitempty" comment:"Only valid for filters for milestones"`
+
+	// Epic Only
+	FixedDates bool `json:"fixed_dates,omitempty" yaml:"fixed_dates,omitempty" resource:"epic" comment:"Only valid for filters for epics"`
 }
 
 // RuleConditionDate --

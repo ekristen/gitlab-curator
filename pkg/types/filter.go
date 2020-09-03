@@ -72,3 +72,74 @@ func (f *Filter) GroupMilestones(opts *Options, milestones []*gitlab.GroupMilest
 
 	return filteredMilestones, nil
 }
+
+// GroupEpics filters Epics based on additional conditions not supported by the API
+func (f *Filter) GroupEpics(opts *Options, epics []*gitlab.Epic, log *logrus.Entry) ([]*gitlab.Epic, error) {
+	if f.Relation == "" {
+		f.Relation = "self"
+	}
+	if f.Action == "" {
+		f.Action = "include"
+	}
+
+	log = log.
+		WithField("relation", f.Relation).
+		WithField("action", f.Action).
+		WithField("name", f.Name)
+
+	log.WithField("prefilter_count", len(epics)).Debug("prefilter count epics")
+
+	var filteredEpics []*gitlab.Epic
+
+	for _, epic := range epics {
+		matched := false
+
+		if f.Relation == "self" {
+			log.Debug("relation: self - called")
+
+			if len(f.Conditions.Labels) > 0 {
+				log.Debug("checking labels")
+				for _, l := range f.Conditions.Labels {
+					if _, ok := find(epic.Labels, l); ok {
+						matched = true
+					}
+				}
+			}
+
+			if len(f.Conditions.MissingLabels) > 0 {
+				log.Debug("checking missing labels")
+				for _, ml := range f.Conditions.MissingLabels {
+					if _, ok := find(epic.Labels, ml); !ok {
+						matched = true
+					}
+				}
+			}
+
+			if f.Conditions.FixedDates == true {
+				log.Debug("checking fixed dates")
+				if epic.StartDateIsFixed == true || epic.DueDateIsFixed == true {
+					matched = true
+				}
+			}
+		}
+
+		if f.Action == "include" && matched {
+			filteredEpics = append(filteredEpics, epic)
+		} else if f.Action == "exclude" && !matched {
+			filteredEpics = append(filteredEpics, epic)
+		}
+	}
+
+	log.WithField("postfilter_count", len(filteredEpics)).Debug("post filter count epics")
+
+	return filteredEpics, nil
+}
+
+func find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}

@@ -68,6 +68,36 @@ func (r *Rule) ProcessMergeRequests(opts *Options) error {
 	return nil
 }
 
+// ProcessEpics --
+func (r *Rule) ProcessEpics(opts *Options) error {
+	log := logrus.WithField("component", "process-epics").WithField("source-type", opts.sourceType)
+
+	options := r.GenerateListGroupEpicsOptions()
+	epics, _, err := opts.client.Epics.ListGroupEpics(opts.sourceID, options)
+	if err != nil {
+		return err
+	}
+
+	epics, err = r.FilterGroupEpics(opts, epics, log)
+	if err != nil {
+		return err
+	}
+
+	for _, epic := range epics {
+		if err := r.Comment(opts, epic); err != nil {
+			return err
+		}
+		if err := r.Label(opts, epic); err != nil {
+			return err
+		}
+		if err := r.State(opts, epic); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // ProcessMilestones --
 func (r *Rule) ProcessMilestones(opts *Options) ([]Rule, error) {
 	log := logrus.WithField("component", "process-milestones").WithField("source-type", opts.sourceType)
@@ -143,4 +173,25 @@ func (r *Rule) FilterGroupMilestones(opts *Options, milestones []*gitlab.GroupMi
 	}
 
 	return filteredMilestones, nil
+}
+
+// FilterGroupEpics --
+func (r *Rule) FilterGroupEpics(opts *Options, epics []*gitlab.Epic, log *logrus.Entry) ([]*gitlab.Epic, error) {
+	if r.Filters == nil {
+		return epics, nil
+	}
+
+	log.Info("filtering epics")
+
+	var err error
+	var filtered = epics
+
+	for _, filter := range r.Filters {
+		filtered, err = filter.GroupEpics(opts, filtered, log)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return filtered, nil
 }

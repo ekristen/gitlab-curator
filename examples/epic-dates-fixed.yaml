@@ -1,0 +1,27 @@
+resource_rules:
+  epics:
+    rules:
+      - name: Check for fixed dates, notify author
+        conditions:
+          state: opened
+        filters:
+          - conditions:
+              fixed_dates: true
+          - conditions:
+              labels:
+                - policy/fixed-date
+            action: exclude
+        limits:
+          per_page: 100
+        actions:
+          comment: |
+            Hi @{{ .Issue.Author.Username }},
+
+            Epics should not used fixed dates. If a placeholder issue does not exist, please create and assign to the quarterly
+            milestone in which you'd expect this epic to be started and/or completed in.
+
+            Please refer to URL for more guidance.
+
+            Thanks!
+          labels:
+            - policy/fixed-date

@@ -3,6 +3,7 @@ package types
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"html/template"
 	"reflect"
 
@@ -92,12 +93,23 @@ func (rule *Rule) Summarize(opts *Options, issues []*gitlab.Issue) error {
 func (rule *Rule) Label(opts *Options, entity interface{}) error {
 	log := logrus.WithField("action", "label")
 
-	if rule.Actions.Labels == nil {
-		log.Debug("no label action defined")
-		return nil
-	}
-
 	switch reflect.TypeOf(entity).String() {
+	case "*gitlab.Epic":
+		epic := entity.(*gitlab.Epic)
+
+		log = log.
+			WithField("type", "epic").
+			WithField("id", epic.ID).
+			WithField("title", epic.Title).
+			WithField("group", epic.GroupID)
+
+		if rule.Actions.Labels == nil {
+			log.Debug("no label action defined")
+			return nil
+		}
+
+		rule.labelEpic(opts, epic, log)
+		break
 	case "*gitlab.Issue":
 		issue := entity.(*gitlab.Issue)
 
@@ -110,6 +122,11 @@ func (rule *Rule) Label(opts *Options, entity interface{}) error {
 
 		if issue.Milestone != nil {
 			log = log.WithField("milestone", issue.Milestone.Title)
+		}
+
+		if rule.Actions.Labels == nil {
+			log.Debug("no label action defined")
+			return nil
 		}
 
 		rule.labelIssue(opts, issue, log)
@@ -128,8 +145,15 @@ func (rule *Rule) Label(opts *Options, entity interface{}) error {
 			log = log.WithField("milestone", mergeRequest.Milestone.Title)
 		}
 
+		if rule.Actions.Labels == nil {
+			log.Debug("no label action defined")
+			return nil
+		}
+
 		rule.labelMergeRequest(opts, mergeRequest, log)
 		break
+	default:
+		return fmt.Errorf("unsupported resource: %s", reflect.TypeOf(entity).String())
 	}
 
 	return nil
@@ -137,12 +161,20 @@ func (rule *Rule) Label(opts *Options, entity interface{}) error {
 
 // Comment --
 func (rule *Rule) Comment(opts *Options, entity interface{}) error {
-	if rule.Actions.Comment == nil {
-		logrus.Debug("no comment action defined")
-		return nil
-	}
-
 	switch reflect.TypeOf(entity).String() {
+	case "*gitlab.Epic":
+		epic := entity.(*gitlab.Epic)
+
+		log := logrus.
+			WithField("author", epic.Author.Username).
+			WithField("title", epic.Title)
+
+		if rule.Actions.Comment == nil {
+			logrus.Debug("no comment action defined")
+			return nil
+		}
+
+		return rule.commentEpic(opts, epic, log)
 	case "*gitlab.Issue":
 		issue := entity.(*gitlab.Issue)
 
@@ -153,6 +185,11 @@ func (rule *Rule) Comment(opts *Options, entity interface{}) error {
 
 		if issue.Milestone != nil {
 			log = log.WithField("milestone", issue.Milestone.Title)
+		}
+
+		if rule.Actions.Comment == nil {
+			logrus.Debug("no comment action defined")
+			return nil
 		}
 
 		ok, err := rule.checkMemberPermissions(opts, issue.ProjectID, issue.Author.ID)
@@ -166,8 +203,7 @@ func (rule *Rule) Comment(opts *Options, entity interface{}) error {
 
 		// TODO: if user doesn't have permission, @ the right team members to come take a look
 
-		rule.commentIssue(opts, issue, log)
-		break
+		return rule.commentIssue(opts, issue, log)
 	case "*gitlab.MergeRequest":
 		mergeRequest := entity.(*gitlab.MergeRequest)
 
@@ -177,11 +213,15 @@ func (rule *Rule) Comment(opts *Options, entity interface{}) error {
 			WithField("title", mergeRequest.Title).
 			WithField("project", mergeRequest.ProjectID)
 
-		rule.commentMergeRequest(opts, mergeRequest, log)
-		break
-	}
+		if rule.Actions.Comment == nil {
+			logrus.Debug("no comment action defined")
+			return nil
+		}
 
-	return nil
+		return rule.commentMergeRequest(opts, mergeRequest, log)
+	default:
+		return fmt.Errorf("unsupported resource: %s", reflect.TypeOf(entity).String())
+	}
 }
 
 func (rule *Rule) checkMemberPermissions(opts *Options, projectID, memberID int) (bool, error) {
@@ -199,6 +239,27 @@ func (rule *Rule) checkMemberPermissions(opts *Options, projectID, memberID int)
 	}
 
 	return true, nil
+}
+
+func (rule *Rule) labelEpic(opts *Options, epic *gitlab.Epic, log *logrus.Entry) error {
+	log = log.WithField("component", "label-epic")
+
+	addLabels := gitlab.Labels(rule.Actions.Labels)
+
+	if opts.dryRun == true {
+		log.WithField("addLabels", addLabels).Warn("WOULD have added label to issue")
+		return nil
+	}
+
+	_, _, err := opts.client.Epics.UpdateEpic(epic.GroupID, epic.ID, &gitlab.UpdateEpicOptions{
+		Labels: append(epic.Labels, addLabels...),
+	})
+	if err != nil {
+		log.WithError(err).Error("unable to update issue")
+		return err
+	}
+
+	return nil
 }
 
 func (rule *Rule) labelIssue(opts *Options, issue *gitlab.Issue, log *logrus.Entry) error {
@@ -277,9 +338,28 @@ func (rule *Rule) commentMergeRequest(opts *Options, issue *gitlab.MergeRequest,
 	return nil
 }
 
+func (rule *Rule) commentEpic(opts *Options, epic *gitlab.Epic, log *logrus.Entry) error {
+	log.Warn("not implemented")
+	return nil
+}
+
 // State changes state of a Gitlab entity
 func (rule *Rule) State(opts *Options, entity interface{}) error {
 	switch reflect.TypeOf(entity).String() {
+	case "*gitlab.Epic":
+		epic := entity.(*gitlab.Epic)
+
+		log := logrus.
+			WithField("title", epic.Title)
+
+		if rule.Actions == nil || rule.Actions.State == nil {
+			log.Debug("no state action defined")
+			return nil
+		}
+
+		log.Debug("starting state action")
+
+		return rule.stateGroupEpic(opts, epic, log)
 	case "*gitlab.Milestone":
 		milestone := entity.(*gitlab.Milestone)
 
@@ -310,8 +390,12 @@ func (rule *Rule) State(opts *Options, entity interface{}) error {
 		log.Debug("starting state action")
 
 		return rule.stateGroupMilestone(opts, milestone, log)
+	default:
+		return fmt.Errorf("unsupported resource %s", reflect.TypeOf(entity).String())
 	}
+}
 
+func (rule *Rule) stateGroupEpic(opts *Options, epic *gitlab.Epic, log *logrus.Entry) error {
 	return nil
 }
 

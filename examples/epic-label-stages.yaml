@@ -1,0 +1,18 @@
+resource_rules:
+  epics:
+    rules:
+      - name: Check for stage label, add if missing
+        conditions:
+          state: opened
+        filters:
+          - conditions:
+              missing_labels:
+                - stage::requirements
+                - stage::review
+                - stage::design
+                - stage::plan
+                - stage::deliver
+                - stage::complete
+        actions:
+          labels:
+            - stage::requirements
