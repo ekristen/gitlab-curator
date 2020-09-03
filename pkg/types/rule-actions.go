@@ -478,3 +478,47 @@ func (rule *Rule) stateGroupMilestone(opts *Options, milestone *gitlab.GroupMile
 
 	return nil
 }
+
+// Unlabel --
+func (rule *Rule) Unlabel(opts *Options, entity interface{}) error {
+	switch reflect.TypeOf(entity).String() {
+	case "*gitlab.Issue":
+		issue := entity.(*gitlab.Issue)
+
+		log := logrus.
+			WithField("title", issue.Title).
+			WithField("created", issue.CreatedAt)
+
+		if rule.Actions == nil || rule.Actions.State == nil {
+			log.Debug("no state action defined")
+			return nil
+		}
+
+		log.Debug("starting state action")
+
+		return rule.unlabelIssue(opts, issue, log)
+	default:
+		return fmt.Errorf("unsupported resource %s", reflect.TypeOf(entity).String())
+	}
+}
+
+func (rule *Rule) unlabelIssue(opts *Options, issue *gitlab.Issue, log *logrus.Entry) error {
+	log = log.WithField("component", "label-issue")
+
+	removeLabels := gitlab.Labels(rule.Actions.Unlabel)
+
+	if opts.dryRun == true {
+		log.WithField("removeLabels", removeLabels).Warn("WOULD have added label to issue")
+		return nil
+	}
+
+	_, _, err := opts.client.Issues.UpdateIssue(issue.ProjectID, issue.ID, &gitlab.UpdateIssueOptions{
+		RemoveLabels: &removeLabels,
+	})
+	if err != nil {
+		log.WithError(err).Error("unable to update issue")
+		return err
+	}
+
+	return nil
+}

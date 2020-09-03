@@ -43,6 +43,7 @@ type RuleConditionDate struct {
 type RuleActions struct {
 	State       *string              `json:"state,omitempty" yaml:"state,omitempty"`
 	Labels      []string             `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Unlabel     []string             `json:"unlabel,omitempty" yaml:"unlabel,omitempty"`
 	Comment     *string              `json:"comment,omitempty" yaml:"comment,omitempty"`
 	CommentType *string              `json:"comment_type,omitempty" yaml:"comment_type,omitempty"`
 	Summarize   *RuleActionSummarize `json:"summarize,omitempty" yaml:"summarize,omitempty"`

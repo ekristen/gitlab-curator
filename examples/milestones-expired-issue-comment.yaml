@@ -15,12 +15,12 @@ resource_rules:
               conditions:
                 state: opened
                 forbidden_labels:
-                  - automation/expired-milestone
+                  - policy/expired-milestone
               limits:
                 per_page: 1
               actions:
                 labels:
-                  - automation/expired-milestone
+                  - policy/expired-milestone
                 comment: |
                   {{- if .Issue.Assignee }}
                   Hi @{{ .Issue.Assignee.Username }},

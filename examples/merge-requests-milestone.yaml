@@ -7,13 +7,22 @@ resource_rules:
           milestone: none
           forbidden_labels:
             - kind/renovate
-            - automation/updated
+            - policy/missing-milestone
         actions:
           labels:
-            - automation/updated
+            - policy/missing-milestone
           comment: |
             Hi @{{ .MergeRequest.Author.Username }},
 
-            Please make sure you assign your merge request to the appropriate sprint milestone.
+            Please make sure you assign your merge request to the appropriate sprint milestone and remove the ~policy/missing-milestone label
 
             Thanks!
+      - name: Remove policy label if there is a milestone attached
+        conditions:
+          state: opened
+          milestone: any
+          labels:
+            - policy/missing-milestone
+        actions:
+          unlabel:
+            - policy/missing-milestone
